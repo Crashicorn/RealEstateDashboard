@@ -1,9 +1,11 @@
 import streamlit as st
 import json
 import os
+import requests
 
 # File to store API keys
 API_KEYS_FILE = "api_keys.json"
+OPENWEBUI_URL = "http://localhost:5001"  # Update if needed
 
 # Load API keys if they exist
 def load_api_keys():
@@ -37,6 +39,17 @@ def api_setup():
         save_api_keys(api_keys)
         st.success("API Keys Saved Successfully!")
 
+# Function to send requests to OpenWebUI
+def query_openwebui(agent_name, user_input):
+    try:
+        response = requests.post(f"{OPENWEBUI_URL}/query", json={"agent": agent_name, "input": user_input})
+        if response.status_code == 200:
+            return response.json().get("response", "No response received.")
+        else:
+            return f"Error: {response.status_code}"
+    except Exception as e:
+        return f"Request failed: {str(e)}"
+
 # Main Dashboard
 def main_dashboard():
     st.title("🏡 Real Estate AI Suite")
@@ -47,7 +60,11 @@ def main_dashboard():
         api_setup()
     else:
         st.write(f"### {choice} Agent")
-        st.write("(This agent is under development. Future integration will go here.)")
+        user_input = st.text_area("Enter your request:")
+        if st.button("Submit Request"):
+            response = query_openwebui(choice, user_input)
+            st.write("### Response:")
+            st.write(response)
 
 # Run the app
 if __name__ == "__main__":
