@@ -40,9 +40,14 @@ def api_setup():
         st.success("API Keys Saved Successfully!")
 
 # Function to send requests to OpenWebUI
-def query_openwebui(agent_name, user_input):
+def query_openwebui(agent_name, user_input, api_keys):
+    payload = {
+        "agent": agent_name,
+        "input": user_input,
+        "api_keys": api_keys  # Send API keys for better responses
+    }
     try:
-        response = requests.post(f"{OPENWEBUI_URL}/query", json={"agent": agent_name, "input": user_input})
+        response = requests.post(f"{OPENWEBUI_URL}/query", json=payload)
         if response.status_code == 200:
             return response.json().get("response", "No response received.")
         else:
@@ -61,10 +66,13 @@ def main_dashboard():
     else:
         st.write(f"### {choice} Agent")
         user_input = st.text_area("Enter your request:")
+        api_keys = load_api_keys()
+        
         if st.button("Submit Request"):
-            response = query_openwebui(choice, user_input)
+            with st.spinner("Processing..."):
+                response = query_openwebui(choice, user_input, api_keys)
             st.write("### Response:")
-            st.write(response)
+            st.markdown(f"```\n{response}\n```")
 
 # Run the app
 if __name__ == "__main__":
