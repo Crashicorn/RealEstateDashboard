@@ -19,7 +19,33 @@ def save_api_keys(api_keys):
     with open(API_KEYS_FILE, "w") as file:
         json.dump(api_keys, file)
 
-# UI for API Setup Wizard
+# Example queries for each agent
+EXAMPLES = {
+    "Client Relations": "Generate an email follow-up for a potential homebuyer.",
+    "Market Analysis": "Analyze real estate trends in Los Angeles for the past year.",
+    "Transactions": "What documents are needed for a home purchase in Texas?",
+    "Marketing": "Suggest a social media campaign for a new property listing.",
+    "Property Management": "Create a maintenance schedule for a rental property.",
+    "Training & Support": "Explain how mortgage pre-approval works."
+}
+
+# Function to send requests to OpenWebUI
+def query_openwebui(agent_name, user_input, api_keys):
+    payload = {
+        "agent": agent_name,
+        "input": user_input,
+        "api_keys": api_keys  # Send API keys for better responses
+    }
+    try:
+        response = requests.post(f"{OPENWEBUI_URL}/query", json=payload)
+        if response.status_code == 200:
+            return response.json().get("response", "No response received.")
+        else:
+            return f"Error: {response.status_code}"
+    except Exception as e:
+        return f"Request failed: {str(e)}"
+
+# API Setup Page
 def api_setup():
     st.title("🔑 API Setup Wizard")
     st.write("Enter your API keys below. If you don't have them yet, click the links to get them.")
@@ -39,22 +65,6 @@ def api_setup():
         save_api_keys(api_keys)
         st.success("API Keys Saved Successfully!")
 
-# Function to send requests to OpenWebUI
-def query_openwebui(agent_name, user_input, api_keys):
-    payload = {
-        "agent": agent_name,
-        "input": user_input,
-        "api_keys": api_keys  # Send API keys for better responses
-    }
-    try:
-        response = requests.post(f"{OPENWEBUI_URL}/query", json=payload)
-        if response.status_code == 200:
-            return response.json().get("response", "No response received.")
-        else:
-            return f"Error: {response.status_code}"
-    except Exception as e:
-        return f"Request failed: {str(e)}"
-
 # Main Dashboard
 def main_dashboard():
     st.title("🏡 Real Estate AI Suite")
@@ -65,14 +75,18 @@ def main_dashboard():
         api_setup()
     else:
         st.write(f"### {choice} Agent")
+        st.write("💡 Example query: " + EXAMPLES.get(choice, ""))
         user_input = st.text_area("Enter your request:")
+        file_upload = st.file_uploader("Upload a document (optional)", type=["pdf", "docx", "txt"])
+        
         api_keys = load_api_keys()
         
         if st.button("Submit Request"):
             with st.spinner("Processing..."):
                 response = query_openwebui(choice, user_input, api_keys)
-            st.write("### Response:")
-            st.markdown(f"```\n{response}\n```")
+            
+            with st.expander("🔽 View Response"):
+                st.markdown(f"```\n{response}\n```")
 
 # Run the app
 if __name__ == "__main__":
